@@ -28,13 +28,13 @@ class Simulacion:
         Simulacion.pacientes_mostrar = {}
 
         self.fila = [[self.nombre_evento, self.reloj] + \
-                     self.eventos.get_fila() + self.enfermero.get_fila() + self.medicos.get_fila(Simulacion) + self.estadisticas.get_fila()]
+                     self.eventos.get_fila() + self.enfermero.get_fila() + self.medicos.get_fila(Simulacion) + self.estadisticas.get_fila() + [Paciente.countId]]
         columnas = ["nombre_evento", "reloj", "rnd_llegada", "tiempo_llegada", "proxima_llegada", "rnd_examen",
                     "tiempo_examen", "proximo_examen", "rnd_urgente", "urgente", "rnd_atencion", "tiempo_atencion",
                     "fin_atencion_m1", "fin_atencion_m2", 'rnd_prox_inestabilidad', 'tiempo_prox_inestabilidad', 'prox_inestabilidad', 'tiempo_purga', 'fin_purga', "estado", 'tiempo_remanente', "cola", "estado_M1", "remanente_M1", "estado_M2", "remanente_M2", "cola_comun",
                     "cola_urgente", "max_cola_comun", "max_cola_urgente", "espera_urgente", "max_espera_urgente",
                     "ac_tiempo_espera_comun", "ac_pacientes_atendidos", "interrupciones", "ac_tiempo_examen",
-                    "cant_pacientes_examinados", "tiempo_ocioso_M1", "tiempo_ocioso_M2"]
+                    "cant_pacientes_examinados", "tiempo_ocioso_M1", "tiempo_ocioso_M2", "cant_pacientes"]
         self.tabla = pd.DataFrame(self.fila, columns=columnas)
         self.reloj_anterior = 0
 
@@ -78,7 +78,7 @@ class Simulacion:
 
                 # Solo si hay que mostrar la linea, hacemos esto
                 self.fila = [self.nombre_evento, self.reloj] + self.eventos.get_fila() + \
-                             self.enfermero.get_fila() + self.medicos.get_fila(Simulacion) + self.estadisticas.get_fila()
+                             self.enfermero.get_fila() + self.medicos.get_fila(Simulacion) + self.estadisticas.get_fila() + [Paciente.countId]
                 self.tabla = self.tabla.append(pd.DataFrame([self.fila], columns=columnas))
                 # Hasta aca
 
@@ -90,7 +90,7 @@ class Simulacion:
             # Fin del reinicio
 
         self.fila = [self.nombre_evento, self.reloj] + self.eventos.get_fila() + \
-                    self.enfermero.get_fila() + self.medicos.get_fila(Simulacion) + self.estadisticas.get_fila()
+                    self.enfermero.get_fila() + self.medicos.get_fila(Simulacion) + self.estadisticas.get_fila() + [Paciente.countId]
         self.tabla = self.tabla.append(pd.DataFrame([self.fila], columns=columnas))
         Estadisticas.reiniciar_estadisticas()
         Paciente.countId = 0
@@ -194,7 +194,7 @@ class Simulacion:
         return json.loads(self.tabla.reset_index().to_json(orient='records'))
 
     def sistema_inestable(self):
-        self.eventos.calcular_fin_purga(self.reloj)
+        self.eventos.calcular_fin_purga(self.reloj, Paciente.countId)
         self.eventos.limpiar_inestabilidad()
         self.enfermero.purgar(self.reloj, self.eventos.fin_examen)
         self.eventos.arrastrar_llegada_paciente()

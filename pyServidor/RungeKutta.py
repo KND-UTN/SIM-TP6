@@ -27,8 +27,10 @@ class RungeKutta:
         to = 0
         eo = 15
 
-        # El tiempo promedio de 60 llegadas es de 300 minutos, por lo que la ecuacion de "a" nos queda
-        a = mpmath.ln(20 / 3) / 300
+        # El tiempo promedio de 60 llegadas es de 300 minutos, con un E inicial de 15 y un E final de 100,
+        # por lo que la ecuacion de "a" nos queda
+        # -- proviende de despejar "a" de la siguiente ecuacion: E = Eo * e ^ (a * t) --
+        a = mpmath.ln(100 / 15) / 300
 
         # b es igual a cero
         b = 0
@@ -44,10 +46,13 @@ class RungeKutta:
             nuevot = nuevoti1
             nuevoe = nuevoei1
             if nuevoe >= 50 and vector[1] < 50:
+                print(nuevot)
                 tiempos.append(nuevot)
             if nuevoe >= 70 and vector[1] < 70:
+                print(nuevot)
                 tiempos.append(nuevot)
             if nuevoe >= 100 and vector[1] < 100:
+                print(nuevot)
                 tiempos.append(nuevot)
 
             nuevok1 = a * nuevoe + b
@@ -125,8 +130,44 @@ class RungeKutta:
         if random < 1:
             return self.tiempos[2]
 
-    def get_tiempo_purga(self):
-        return self.tiempo
+    def get_tiempo_purga(self, cant):
+        columnas = ['t', 'L', 'k1', 'k2', 'k3', 'k4', 't(i+1)', 'L(i+1)', 'L(i-1) - L(i)']
+        # -- Definicion de variables --
+        h = 1
+        to = 0
+        lo = cant
+
+        # El tiempo promedio de 60 llegadas es de 300 minutos, por lo que la ecuacion de "a" nos queda
+        a = -(mpmath.ln(20 / 3) / 300) * 0.5
+
+        # b es igual a cero
+        b = 0
+
+        # -- Procesamiento --
+        vector = [None, None, None, None, None, None, to, lo, math.inf]
+        tabla = pd.DataFrame([vector], columns=columnas)
+        diferencia = math.inf
+        nuevoti1 = to
+        nuevoli1 = lo
+
+        while diferencia >= .02:
+            nuevot = nuevoti1
+            nuevol = nuevoli1
+            nuevok1 = a * nuevol + b
+            nuevok2 = a * (nuevol + (h / 2) * nuevok1) + b
+            nuevok3 = a * (nuevol + (h / 2) * nuevok2) + b
+            nuevok4 = a * (nuevol + h * nuevok3) + b
+            nuevoti1 = nuevot + h
+            nuevoli1 = nuevol + (h / 6) * (nuevok1 + 2 * nuevok2 + 2 * nuevok3 + nuevok4)
+            if vector[1] is not None:
+                diferencia = vector[1] - nuevol
+
+            vector = [nuevot, nuevol, nuevok1, nuevok2, nuevok3, nuevok4, nuevoti1, nuevoli1, diferencia]
+            tabla = tabla.append(pd.DataFrame([vector], columns=columnas))
+        tiempo = nuevot / 100
+        return tiempo
+
+
 
     def json_inestabilidad(self):
         return json.loads(self.tablita_inestabilidad.reset_index().to_json(orient='records', default_handler=float))
@@ -137,10 +178,51 @@ class RungeKutta:
 
 
 
+# if __name__ == '__main__':
+#     rk = RungeKutta()
+#     print(rk.get_tiempo_inestabilidad(.1))
+#     print(rk.get_tiempo_inestabilidad(.6))
+#     print(rk.get_tiempo_inestabilidad(.9))
+#     print(rk.get_tiempo_purga(60))
+#     print(rk.json_purga())
+
+def tabla_purga(lo, a=-(mpmath.ln(20 / 3) / 300)*0.5):
+    columnas = ['t', 'L', 'k1', 'k2', 'k3', 'k4', 't(i+1)', 'L(i+1)', 'L(i-1) - L(i)']
+    # -- Definicion de variables --
+    h = 1
+    to = 0
+
+    # b es igual a cero
+    b = 0
+
+    # -- Procesamiento --
+    vector = [None, None, None, None, None, None, to, lo, math.inf]
+    tabla = pd.DataFrame([vector], columns=columnas)
+    diferencia = math.inf
+    nuevoti1 = to
+    nuevoli1 = lo
+
+    while diferencia >= .02:
+        nuevot = nuevoti1
+        nuevol = nuevoli1
+        nuevok1 = a * nuevol + b
+        nuevok2 = a * (nuevol + (h / 2) * nuevok1) + b
+        nuevok3 = a * (nuevol + (h / 2) * nuevok2) + b
+        nuevok4 = a * (nuevol + h * nuevok3) + b
+        nuevoti1 = nuevot + h
+        nuevoli1 = nuevol + (h / 6) * (nuevok1 + 2 * nuevok2 + 2 * nuevok3 + nuevok4)
+        if vector[1] is not None:
+            diferencia = vector[1] - nuevol
+
+        vector = [nuevot, nuevol, nuevok1, nuevok2, nuevok3, nuevok4, nuevoti1, nuevoli1, diferencia]
+        tabla = tabla.append(pd.DataFrame([vector], columns=columnas))
+    writer = pd.ExcelWriter('RungeKuttav2.xlsx')
+    tabla.reset_index(inplace=True)
+
+    # Write each dataframe to a different worksheet.
+    tabla.to_excel(writer, sheet_name='Sheet1')
+    writer.save()
+
 if __name__ == '__main__':
-    rk = RungeKutta()
-    print(rk.get_tiempo_inestabilidad(.1))
-    print(rk.get_tiempo_inestabilidad(.6))
-    print(rk.get_tiempo_inestabilidad(.9))
-    print(rk.get_tiempo_purga())
-    print(rk.json_purga())
+    tabla_purga(58)
+

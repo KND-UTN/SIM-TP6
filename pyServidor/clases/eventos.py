@@ -121,8 +121,8 @@ class Eventos:
 
         return llegada_paciente + fin_examen + urgente + fin_atencion + inestabilidad
 
-    def calcular_fin_purga(self, reloj):
-        self.tiempo_purga = self.rk.get_tiempo_purga()
+    def calcular_fin_purga(self, reloj, cant_pacientes):
+        self.tiempo_purga = self.rk.get_tiempo_purga(cant_pacientes)
         self.fin_purga = reloj + self.tiempo_purga
 
     def calcular_prox_inestabilidad(self, reloj):
